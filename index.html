@@ -84,6 +84,7 @@
   td b { font-weight: 700; }
   .spec td:first-child { color: var(--ink2); width: 140px; }
   .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 20px; }
+  @media (min-width: 900px) { .cards.three { grid-template-columns: repeat(3, 1fr); } }
   .card { background: var(--card); border: 1px solid var(--grid); border-radius: 10px; padding: 18px 20px; }
   .card h3 { margin: 0 0 8px; }
   .card p { margin: 0; color: var(--ink2); font-size: 15.5px; }
@@ -409,21 +410,42 @@
 <section id="data">
   <h2><span class="n">6</span>Building on it: recording and replaying demonstrations</h2>
   <p class="sub prose">The controller is the base for collecting human demonstrations and replaying their forces on the robot.
-    These parts are newer; each is marked with how far it has been tested.</p>
+    These parts are newer; each is marked with how far it has been tested. Below them, the first collection session
+    puts the recorder to work on the real robot.</p>
+  <div class="cards three">
+    <div class="card"><span class="tag real">Real robot, simulated contact</span>
+      <h3>Force replay</h3>
+      <p>Replays a recorded pose and wrench with force feed-forward in the admittance. Against a 5 kN/m virtual wall the force
+        error on a 10 N/s ramp was −0.19 N, against +4.22 N for the virtual-target method (exactly D·Ḟ/K). Stiff contact
+        needs k<sub>e</sub>/D ≤ 50 rad/s: at 50 kN/m, D 600 oscillated at 17 Hz and D 1000 was stable.</p></div>
+    <div class="card"><span class="tag real">Real robot</span>
+      <h3>Handle teaching recorder</h3>
+      <p>Moved the compliance centre to the grasp point, estimated from the F/T sensor: a twist now slides it 0.1–1.5 mm
+        instead of 22–69 mm. Traced 25–31 Hz bursts in fast wrist rotation to the control loop (pendant freedrive stayed quiet)
+        and removed them with a rotation-only low-pass (41 → 1 strong windows). Added an elbow guard after tracing a
+        protective stop to the elbow crossing a safety plane.</p></div>
+    <div class="card"><span class="tag">URSim only</span>
+      <h3>Collision guard</h3>
+      <p>Keeps the tool clear of the robot's links, the table and the safety planes, using convex pieces of the UR meshes and the
+        tool CAD. MuJoCo distance queries, with my own GJK fallback where MuJoCo returned false zeros, run in a separate
+        process (about 50 µs inside the loop). No false alarms on 15,747 logged poses.</p></div>
+  </div>
 
   <h3>First collection session on the real robot</h3>
   <p class="prose">On 12 November I recorded a first small dataset with the whole pipeline. The task: guide the arm by its
     handle and roll a ball across the table with the tool tip ("Move the red ball to the hole"). My collection GUI starts the
     500 Hz teaching controller, shows both cameras and the loop's health live, and saves each episode to its own folder:
-    the robot log, colour and depth video from each camera, and the task and instruction.</p>
+    the robot log, colour and depth video from each camera, and the task and instruction. The robot and both RealSense
+    D405 cameras are recorded on one clock. The cameras and the file export run in their own processes, after I traced
+    loop stalls of up to 12 ms to a writer thread holding the GIL. Camera-to-robot timing, checked from motion, is
+    −0.1 ms (SE 3.7 ms).</p>
   <div class="video">
     <video controls playsinline preload="none" poster="media/posters/collection_gui.jpg">
       <source src="media/collection_gui.mp4" type="video/mp4">
     </video>
   </div>
-  <p class="cap">The collection GUI recording episode 4: a screen recording at 1× (42 s). Space starts and stops an episode;
-    the cameras and the files are written in other processes, so the next episode can start right away. Robot IP and
-    dataset path are blurred.</p>
+  <p class="cap">The collection GUI recording episode 4: a screen recording at 1× (42 s). Space starts and stops an episode,
+    and the next one can start right away. Robot IP and dataset path are blurred.</p>
   <figure><a href="figures/fig8_collection.png"><img src="figures/fig8_collection.png" loading="lazy" width="1376" height="1261"
     alt="Scene and wrist camera frames at three moments of one episode, above the tool speed, rotation and wrist force over the same episode"></a>
     <figcaption>Episode 4 from the saved files. The force is what the built-in wrist sensor reads: the hand and the ball
@@ -450,31 +472,6 @@
       3 at start-up, 5 as the first recording started, and 5 spread over the session. The burst at the first recording
       is the next thing to trace.</li>
   </ul>
-
-  <h3>The parts, and how far each is tested</h3>
-  <div class="cards">
-    <div class="card"><span class="tag real">Real robot, simulated contact</span>
-      <h3>Force replay</h3>
-      <p>Replays a recorded pose and wrench with force feed-forward in the admittance. Against a 5 kN/m virtual wall the force
-        error on a 10 N/s ramp was −0.19 N, against +4.22 N for the virtual-target method (exactly D·Ḟ/K). Stiff contact
-        needs k<sub>e</sub>/D ≤ 50 rad/s: at 50 kN/m, D 600 oscillated at 17 Hz and D 1000 was stable.</p></div>
-    <div class="card"><span class="tag real">Real robot</span>
-      <h3>Handle teaching recorder</h3>
-      <p>Moved the compliance centre to the grasp point, estimated from the F/T sensor: a twist now slides it 0.1–1.5 mm
-        instead of 22–69 mm. Traced 25–31 Hz bursts in fast wrist rotation to the control loop (pendant freedrive stayed quiet)
-        and removed them with a rotation-only low-pass (41 → 1 strong windows). Added an elbow guard after tracing a
-        protective stop to the elbow crossing a safety plane.</p></div>
-    <div class="card"><span class="tag real">Real robot</span>
-      <h3>Synchronised recording</h3>
-      <p>Robot state, wrench and two RealSense D405 cameras per demonstration, recorded next to the 2 ms loop. Cameras and
-        file export run in their own processes, after I traced loop stalls of up to 12 ms to the writer thread holding the
-        GIL. Camera-to-robot timing, checked from motion: −0.1 ms (SE 3.7 ms). Used for the first session above.</p></div>
-    <div class="card"><span class="tag">URSim only</span>
-      <h3>Collision guard</h3>
-      <p>Keeps the tool clear of the robot's links, the table and the safety planes, using convex pieces of the UR meshes and the
-        tool CAD. MuJoCo distance queries, with my own GJK fallback where MuJoCo returned false zeros, run in a separate
-        process (about 50 µs inside the loop). No false alarms on 15,747 logged poses.</p></div>
-  </div>
 </section>
 
 <section id="next">
