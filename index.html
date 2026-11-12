@@ -223,7 +223,7 @@
     <tr><td>Robot</td><td>UR5e, PolyScope 5.25, built-in wrist force/torque sensor</td></tr>
     <tr><td>Software</td><td>Python 3 + numpy over <code>ur_rtde</code>; one control step per RTDE packet</td></tr>
     <tr><td>Testing</td><td>Offline closed-loop simulation tests, then URSim, then the real robot. Each new feature, switched off, was checked against the previous commit: identical commands over 41,000 cycles.</td></tr>
-    <tr><td>Tools</td><td>Sensor loggers and drift/hysteresis analysis; a browser GUI with a live F/T plot and 3D robot view; open-loop identification and tap tests; the figure and video scripts for this page.</td></tr>
+    <tr><td>Tools</td><td>Sensor loggers and drift/hysteresis analysis; a browser GUI with a live F/T plot and 3D robot view; a data-collection GUI with live cameras and an episode table; open-loop identification and tap tests; the figure and video scripts for this page.</td></tr>
   </table>
 </section>
 
@@ -410,6 +410,48 @@
   <h2><span class="n">6</span>Building on it: recording and replaying demonstrations</h2>
   <p class="sub prose">The controller is the base for collecting human demonstrations and replaying their forces on the robot.
     These parts are newer; each is marked with how far it has been tested.</p>
+
+  <h3>First collection session on the real robot</h3>
+  <p class="prose">On 12 November I recorded a first small dataset with the whole pipeline. The task: guide the arm by its
+    handle and roll a ball across the table with the tool tip ("Move the red ball to the hole"). My collection GUI starts the
+    500 Hz teaching controller, shows both cameras and the loop's health live, and saves each episode to its own folder:
+    the robot log, colour and depth video from each camera, and the task and instruction.</p>
+  <div class="video">
+    <video controls playsinline preload="none" poster="media/posters/collection_gui.jpg">
+      <source src="media/collection_gui.mp4" type="video/mp4">
+    </video>
+  </div>
+  <p class="cap">The collection GUI recording episode 4: a screen recording at 1× (42 s). Space starts and stops an episode;
+    the cameras and the files are written in other processes, so the next episode can start right away. Robot IP and
+    dataset path are blurred.</p>
+  <figure><a href="figures/fig8_collection.png"><img src="figures/fig8_collection.png" loading="lazy" width="1376" height="1261"
+    alt="Scene and wrist camera frames at three moments of one episode, above the tool speed, rotation and wrist force over the same episode"></a>
+    <figcaption>Episode 4 from the saved files. The force is what the built-in wrist sensor reads: the hand and the ball
+      together, which partly cancel.</figcaption></figure>
+  <table>
+    <tr><th></th><th>First session, 12 Nov 2026</th></tr>
+    <tr><td>Episodes</td><td class="num">4, 26.6–36.3 s each (129 s)</td></tr>
+    <tr><td>Robot log</td><td class="num">64,473 rows at 500 Hz, 0 dropped</td></tr>
+    <tr><td>Cameras</td><td>2 × RealSense D405, colour + depth, 640 × 480 at 30 fps: no gaps except 3 single-frame
+      drops (wrist camera, episode 4)</td></tr>
+    <tr><td>Hand-guided speed</td><td class="num">39–44 mm/s mean, 103–112 mm/s peak</td></tr>
+    <tr><td>Tool at the 30° rotation limit</td><td class="num">62–86 % of each episode</td></tr>
+    <tr><td>Loop over the whole session</td><td>11.6 min with the GUI, both cameras and a screen recorder running:
+      compute 1.39 ms median, 1.96 ms at the 99.9th percentile; 13 missed packets</td></tr>
+  </table>
+  <ul class="prose">
+    <li><b>The rotation limit shaped the demonstrations.</b> Pushing the ball tilts the tool, and the tilt built up over the
+      session: the episodes started 10°, 21°, 29° and 26° from the run's start pose. For most of each episode the tool sat
+      at the 30° cable limit. Next: re-centre the limit at each episode start.</li>
+    <li><b>Motion only, for now.</b> With only the built-in sensor, the hand on the handle and the ball under the tool load
+      the same sensor, so these episodes record the motion and the summed force, not the contact force. Each file marks
+      its contact force as invalid; separating them needs the external F/T sensor.</li>
+    <li><b>The recorder still costs the loop something.</b> The tuning runs had no missed packets; this session had 13:
+      3 at start-up, 5 as the first recording started, and 5 spread over the session. The burst at the first recording
+      is the next thing to trace.</li>
+  </ul>
+
+  <h3>The parts, and how far each is tested</h3>
   <div class="cards">
     <div class="card"><span class="tag real">Real robot, simulated contact</span>
       <h3>Force replay</h3>
@@ -424,9 +466,9 @@
         protective stop to the elbow crossing a safety plane.</p></div>
     <div class="card"><span class="tag real">Real robot</span>
       <h3>Synchronised recording</h3>
-      <p>Robot state, wrench and two RealSense D405 cameras per demonstration, without disturbing the 2 ms loop. Cameras and
+      <p>Robot state, wrench and two RealSense D405 cameras per demonstration, recorded next to the 2 ms loop. Cameras and
         file export run in their own processes, after I traced loop stalls of up to 12 ms to the writer thread holding the
-        GIL. Camera-to-robot timing, checked from motion: −0.1 ms (SE 3.7 ms).</p></div>
+        GIL. Camera-to-robot timing, checked from motion: −0.1 ms (SE 3.7 ms). Used for the first session above.</p></div>
     <div class="card"><span class="tag">URSim only</span>
       <h3>Collision guard</h3>
       <p>Keeps the tool clear of the robot's links, the table and the safety planes, using convex pieces of the UR meshes and the
@@ -441,7 +483,8 @@
     <li><b>Variable impedance.</b> A policy that changes K online injects energy (½ ΔK Δx²). That needs a passivity mechanism
       such as an energy tank; the analysis here covers fixed gains only.</li>
     <li><b>Gripper and external sensor.</b> Not mounted yet. The gripper mass shows up in the measured force, so the deadbands,
-      identification and margins have to be measured again with it.</li>
+      identification and margins have to be measured again with it. Until the external sensor is on, demonstrations record
+      motion only.</li>
     <li><b>Coverage.</b> Identification was done at two poses, and contact with real stiff surfaces is still to be tested.</li>
     <li><b>Next:</b> a reference that interpolates policy targets, then a second arm.</li>
   </ul>
@@ -450,8 +493,9 @@
 </main>
 <footer>
   <a href="https://choiyoonji.github.io/">Yoon-Ji Choi</a> · <a href="https://github.com/Choiyoonji">GitHub</a><br>
-  Every figure and video on this page is generated from the robot logs by my own scripts
-  (matplotlib for the figures; three.js and ffmpeg for the 3D replays). The simulation is my own JavaScript
+  Every figure and replay video on this page is generated from the robot logs by my own scripts
+  (matplotlib for the figures; three.js and ffmpeg for the 3D replays). The data-collection clip is a screen recording
+  of my collection GUI, and the camera frames are as recorded. The simulation is my own JavaScript
   (three.js for the view) on a model fitted to the identification data.
   UR5e meshes: Universal Robots, BSD-3-Clause.
 </footer>
