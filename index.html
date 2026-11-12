@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hand-guiding admittance control for a UR5e</title>
+<meta name="description" content="A 500 Hz admittance controller on a UR5e's built-in wrist force/torque sensor, designed, tuned and analysed on the real robot.">
+<meta property="og:title" content="Hand-guiding admittance control for a UR5e">
+<meta property="og:description" content="500 Hz admittance control on the built-in wrist F/T sensor: sensor characterisation, controller design, open-loop identification and stability analysis on the real robot.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://choiyoonji.github.io/ur5e-admittance/">
+<meta property="og:image" content="https://choiyoonji.github.io/ur5e-admittance/media/posters/highlight.jpg">
+<link rel="canonical" href="https://choiyoonji.github.io/ur5e-admittance/">
+<style>
+  :root {
+    color-scheme: light;
+    --surface: #fcfcfb; --card: #ffffff; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --accent: #2a78d6; --good: #0ca30c;
+    --text: 680px; --wide: 1040px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--surface); color: var(--ink);
+    font: 17px/1.62 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  nav {
+    position: sticky; top: 0; z-index: 5; background: rgba(252, 252, 251, .92);
+    backdrop-filter: blur(6px); border-bottom: 1px solid var(--grid);
+  }
+  nav .in { max-width: var(--wide); margin: 0 auto; padding: 10px 24px; display: flex; gap: 22px;
+    overflow-x: auto; white-space: nowrap; font-size: 14px; }
+  nav a { color: var(--ink2); }
+  nav a:hover { color: var(--ink); text-decoration: none; }
+  main { padding: 0 24px 80px; }
+  section, header { max-width: var(--wide); margin: 0 auto; }
+  .prose { max-width: var(--text); }
+  header { padding: 64px 0 8px; }
+  .kicker { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
+  h1 { font-size: clamp(32px, 5vw, 50px); line-height: 1.1; letter-spacing: -.02em; margin: 0 0 20px; max-width: 820px; }
+  .lede { font-size: 19px; color: var(--ink2); max-width: 760px; margin: 0 0 32px; }
+  h2 { font-size: 28px; letter-spacing: -.01em; margin: 0 0 6px; }
+  h2 .n { color: var(--muted); font-weight: 500; margin-right: 10px; }
+  h3 { font-size: 18px; margin: 28px 0 6px; }
+  section { padding-top: 72px; }
+  .sub { color: var(--ink2); margin: 0 0 22px; }
+  ul { padding-left: 20px; margin: 10px 0; }
+  li { margin: 6px 0; }
+  b, strong { font-weight: 650; }
+  .video { margin: 0 0 8px; }
+  .video video { width: 100%; display: block; border-radius: 10px; background: #f1f0ec;
+    border: 1px solid var(--grid); aspect-ratio: 16 / 9; }
+  figcaption, .cap { font-size: 14px; color: var(--muted); margin-top: 8px; }
+  figure { margin: 26px 0; }
+  figure img { width: 100%; height: auto; display: block; border-radius: 8px; border: 1px solid var(--grid); background: #fff; }
+  figure.narrow { max-width: 820px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 30px 0 10px; }
+  .stat { background: var(--card); border: 1px solid var(--grid); border-radius: 10px; padding: 18px 20px; }
+  .stat .v { font-size: 30px; font-weight: 700; letter-spacing: -.01em; line-height: 1.15; }
+  .stat .l { color: var(--ink2); font-size: 15px; margin-top: 6px; line-height: 1.45; }
+  .skills { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; padding: 0; list-style: none; }
+  .skills li { margin: 0; font-size: 14px; color: var(--ink2); border: 1px solid var(--grid); background: var(--card);
+    border-radius: 999px; padding: 4px 12px; }
+  .flow { display: flex; flex-wrap: wrap; align-items: stretch; row-gap: 10px; margin: 18px 0 8px; }
+  .flow .row { width: 74px; align-self: center; font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .flow .br { flex-basis: 100%; height: 0; }
+  .flow .node { background: var(--card); border: 1px solid var(--grid); border-radius: 8px; padding: 10px 12px;
+    font-size: 14px; line-height: 1.35; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .node small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 3px; }
+  .flow .node.key { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .flow .arr { align-self: center; color: var(--axis); padding: 0 6px; font-size: 18px; }
+  table { border-collapse: collapse; width: 100%; font-size: 15.5px; margin: 14px 0; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  th { font-weight: 600; color: var(--ink2); font-size: 14px; }
+  td.num { font-variant-numeric: tabular-nums; }
+  td b { font-weight: 700; }
+  .spec td:first-child { color: var(--ink2); width: 140px; }
+  .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 20px; }
+  .card { background: var(--card); border: 1px solid var(--grid); border-radius: 10px; padding: 18px 20px; }
+  .card h3 { margin: 0 0 8px; }
+  .card p { margin: 0; color: var(--ink2); font-size: 15.5px; }
+  .tag { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink2);
+    border: 1px solid var(--grid); border-radius: 999px; padding: 2px 10px 2px 8px; margin-bottom: 10px; }
+  .tag::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .tag.real::before { background: var(--good); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+  .callout { border-left: 3px solid var(--accent); padding: 4px 0 4px 16px; color: var(--ink2); margin: 20px 0; }
+  footer { max-width: var(--wide); margin: 80px auto 0; padding: 22px 24px 40px; border-top: 1px solid var(--grid);
+    color: var(--muted); font-size: 14px; }
+  @media (max-width: 760px) {
+    body { font-size: 16px; }
+    header { padding-top: 36px; }
+    .stats, .cards, .two { grid-template-columns: 1fr; }
+    section { padding-top: 56px; }
+    .flow { flex-direction: column; }
+    .flow .row { width: auto; align-self: flex-start; margin-top: 8px; }
+    .flow .br { display: none; }
+    .flow .arr { transform: rotate(90deg); padding: 2px 0; align-self: flex-start; margin-left: 20px; }
+    .spec td:first-child { width: 96px; }
+  }
+</style>
+</head>
+<body>
+<nav><div class="in">
+  <a href="#top">Overview</a><a href="#system">System</a><a href="#sensor">Sensor</a>
+  <a href="#controller">Controller</a><a href="#stability">Stability</a><a href="#results">Results</a>
+  <a href="#data">Demonstrations</a><a href="#next">Limits</a>
+</div></nav>
+<main id="top">
+
+<header>
+  <p class="kicker">Robot control · Real-robot experiments</p>
+  <h1>Hand-guiding admittance control for a UR5e</h1>
+  <p class="lede">A 500 Hz controller that lets a person push a UR5e around by its tool, using only the
+    robot's built-in wrist force/torque sensor. I measured the sensor before designing the controller,
+    tuned it on the real robot, and when lighter settings became unstable, designed an open-loop
+    identification that showed why. It is the low-level compliance layer for a force-aware
+    vision-language-action (VLA) policy: the policy moves the reference, and admittance handles contact.</p>
+
+  <div class="video">
+    <video controls playsinline preload="metadata" poster="media/posters/highlight.jpg">
+      <source src="media/highlight.mp4" type="video/mp4">
+    </video>
+  </div>
+  <p class="cap">Highlight, 95 s. All robot footage is a 3D replay of logged real-robot runs: measured joint
+    angles, hand force and controller state, at 1× speed.</p>
+
+  <div class="stats">
+    <div class="stat"><div class="v">17.8 → 9.7 N</div>
+      <div class="l">Hand force to guide the arm at 50 mm/s: 45 % lighter than the first tuning.</div></div>
+    <div class="stat"><div class="v">19 Hz</div>
+      <div class="l">Link mode found by open-loop identification. A margin built on it explains every stability result on the robot.</div></div>
+    <div class="stat"><div class="v">500 Hz</div>
+      <div class="l">Control loop in Python: 0 missed packets, at most 1.9 ms of the 2 ms budget.</div></div>
+  </div>
+  <ul class="skills">
+    <li>Admittance control</li><li>Discrete-time design</li><li>System identification</li>
+    <li>Stability analysis</li><li>Sensor characterisation</li><li>Real-time Python</li>
+    <li>Safety design</li><li>Experiments on real hardware</li><li>Data recording pipelines</li>
+  </ul>
+</header>
+
+<section id="system">
+  <h2>System</h2>
+  <p class="sub prose">Everything runs on a PC over RTDE. The robot runs only <code>speedJ</code>; there is no custom URScript.</p>
+  <div class="flow" role="img" aria-label="Signal flow. Sensing: wrist F/T, bias removal, low-pass, deadband. Control: admittance, limits, tracking and IK, speedJ to the UR5e">
+    <span class="row">Sensing</span>
+    <div class="node">Wrist F/T<small>RTDE, 500 Hz</small></div><span class="arr">→</span>
+    <div class="node">Bias removal<small>hands-off re-zero</small></div><span class="arr">→</span>
+    <div class="node">Low-pass<small>15 Hz</small></div><span class="arr">→</span>
+    <div class="node">Deadband<small>ellipsoid per sensor axis</small></div>
+    <span class="br"></span>
+    <span class="row">Control</span>
+    <div class="node key">Admittance<small>M Δv̇ + D Δv + sat(K Δx) = F, exact ZOH, reference x<sub>ref</sub>(t)</small></div><span class="arr">→</span>
+    <div class="node">Limits<small>floor, box, rotation, acceleration (fed back)</small></div><span class="arr">→</span>
+    <div class="node">Tracking + IK<small>damped least squares on the PC</small></div><span class="arr">→</span>
+    <div class="node">speedJ<small>UR5e</small></div>
+  </div>
+  <table class="spec prose">
+    <tr><td>Robot</td><td>UR5e, PolyScope 5.25, built-in wrist force/torque sensor</td></tr>
+    <tr><td>Software</td><td>Python 3 + numpy over <code>ur_rtde</code>; one control step per RTDE packet</td></tr>
+    <tr><td>Testing</td><td>Offline closed-loop simulation tests, then URSim, then the real robot. Each new feature, switched off, was checked against the previous commit: identical commands over 41,000 cycles.</td></tr>
+    <tr><td>Tools</td><td>Sensor loggers and drift/hysteresis analysis; a browser GUI with a live F/T plot and 3D robot view; open-loop identification and tap tests; the figure and video scripts for this page.</td></tr>
+  </table>
+</section>
+
+<section id="sensor">
+  <h2><span class="n">1</span>Know the sensor first</h2>
+  <p class="sub prose">The deadbands and the re-zero logic come from these measurements, not from guesses.</p>
+  <figure><a href="figures/fig7_sensor.png"><img src="figures/fig7_sensor.png" loading="lazy" width="1510" height="694"
+    alt="Sensor drift over 30 minutes and force offset after twisting the tool"></a></figure>
+  <ul class="prose">
+    <li><b>Thermal drift.</b> At rest, Fy rose 6.2 N in 30 minutes. Divided by the damping, a bias is a creep
+      velocity, so it sets how often the controller must re-zero.</li>
+    <li><b>Noise is not isotropic.</b> Fz noise is 2.5–4× Fx at every frequency, so the deadband is an ellipsoid
+      per sensor axis (0.75 / 0.75 / 1.75 N), shrunk continuously so there is no jump at its edge.</li>
+    <li><b>Hysteresis.</b> After a twist, Fz stays 1–3.4 N off for minutes. Pressing with 18 N does not do this.</li>
+    <li><b>Hands-off hold and re-zero.</b> After a long session the arm crept 78 mm in 150 s. The controller now
+      detects "hands off" from the force variance, holds the arm and absorbs the leftover bias. Replaying the
+      same log, the creep falls to about 1 mm.</li>
+    <li><b>A library bug.</b> On PolyScope 5.25, <code>ur_rtde</code> 1.6.3 returns other data for three fields.
+      I confirmed it by parsing the RTDE stream directly; 1.6.5 reads them correctly.</li>
+  </ul>
+</section>
+
+<section id="controller">
+  <h2><span class="n">2</span>Controller design</h2>
+  <p class="sub prose">Push the tool and the arm moves like a light mass on a damper. Let go and a capped spring pulls it back.</p>
+  <div class="video">
+    <video controls playsinline preload="none" poster="media/posters/hand_guiding.jpg">
+      <source src="media/hand_guiding.mp4" type="video/mp4">
+    </video>
+  </div>
+  <p class="cap">Hand guiding with the final setting (replay of a real-robot log, 30 s).</p>
+  <ul class="prose">
+    <li><b>Deviation coordinates.</b> The admittance is solved for the deviation from a reference x<sub>ref</sub>(t),
+      so damping acts only on the deviation and the arm follows a moving reference without lag: 0.04 mm error at
+      20 mm/s, against 2.5–5.2 mm when the spring acts on the absolute pose.</li>
+    <li><b>Exact discretisation.</b> The loop integrates the admittance with a zero-order hold (matrix exponential)
+      and sends the exact average velocity over each cycle. Semi-implicit Euler moved the damping pole by 7 % at
+      M 2 kg and 39 % at 0.25 kg.</li>
+    <li><b>Force-limited spring.</b> sat(K Δx): linear near the reference, constant beyond. When something blocks the
+      way back, the arm presses with about 5–6 N instead of K·x (78 N in a URSim wall test).</li>
+    <li><b>Free return.</b> When nothing has touched the tool for 0.3 s, the arm returns at 100 mm/s instead of
+      28 mm/s; a touch restores the limit within 3 cycles.</li>
+    <li><b>IK on the PC.</b> Damped least squares, damped only near singularities. In URSim the arm crossed the
+      wrist singularity without a protective stop.</li>
+    <li><b>A "66 ms lag"</b> turned out to be the pendant speed slider at 50 %. The controller now reads the speed
+      scaling every cycle.</li>
+  </ul>
+  <div class="two">
+    <figure style="margin-top:8px"><a href="figures/fig3_force_limited_spring.png"><img src="figures/fig3_force_limited_spring.png"
+      loading="lazy" width="1051" height="686" alt="Spring force against deviation, capped at the force limit"></a>
+      <figcaption>On the robot the spring force stayed at 4.96–5.12 N from 2.5 to 122 mm.</figcaption></figure>
+    <div>
+      <h3 style="margin-top:8px">Safety layers</h3>
+      <ul>
+        <li>Height floor with a braking-distance speed limit: 0.09–0.14 mm past it at 12–70 mm/s.</li>
+        <li>Workspace box and a 30° rotation limit for the cable (<a href="media/rotation_limit.mp4">replay</a>).</li>
+        <li>Acceleration limit fed back into the controller state. Without the feedback the joint limit chattered at 35 Hz.</li>
+        <li>Watchdog and stops on packet loss, safety mode and implausible wrench values.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="stability">
+  <h2><span class="n">3</span>Making it lighter, and finding where it breaks</h2>
+  <p class="sub prose">The hand feels deadband + F + D·v + M·v̇. Lighter means a smaller D, and keeping critical damping
+    means a smaller M too.</p>
+  <figure class="narrow"><a href="figures/fig2_push_force.png"><img src="figures/fig2_push_force.png" loading="lazy" width="1050" height="711"
+    alt="Hand force against speed for three settings"></a></figure>
+  <p class="prose">Below M 2 kg it failed on the robot in two different ways. <b>M 0.5 kg</b> buzzed at 36 Hz as soon as the
+    tool was touched. <b>M 1 kg with a 36 Hz notch</b> removed the buzz, but under a long, firm grip a 19.5 Hz oscillation
+    grew slowly.</p>
+  <figure class="narrow"><a href="figures/fig4_oscillation.png"><img src="figures/fig4_oscillation.png" loading="lazy" width="1264" height="686"
+    alt="Force spectra while holding the tool for three settings"></a>
+    <figcaption>Force spectra while holding the tool: the 36 Hz buzz at M 0.5 and the 19.5 Hz peak at M 1 + notch.</figcaption></figure>
+  <div class="video">
+    <video controls playsinline preload="none" poster="media/posters/firm_hold.jpg">
+      <source src="media/firm_hold.mp4" type="video/mp4">
+    </video>
+  </div>
+  <p class="cap">The same long grip, before (M 1 + notch) and after (M 2). The 15–25 Hz force grows about 4× before and stays flat after.</p>
+
+  <h3>Open-loop identification</h3>
+  <p class="prose">A rigid "2 cycles + 8 ms" robot model predicted neither failure. Estimating the robot's response from
+    hand-guiding logs was biased, because the hand closes the loop (coherence 0.33–0.5 at 17–28 Hz). So I designed an
+    open-loop test: hands off, a 34-line multisine from 1 to 100 Hz added to <code>speedJ</code>, the arm within 0.51 mm of
+    its start, and the tool accelerometer measuring the link itself.</p>
+  <figure><a href="figures/fig5_link_frf.png"><img src="figures/fig5_link_frf.png" loading="lazy" width="1657" height="671"
+    alt="Measured frequency response of link and encoder for three axes and two poses"></a>
+    <figcaption>Above 15 Hz the link resonates where the encoder shows anti-resonances: a two-mass system with a flexible joint.
+      The modes move when the arm reaches out (pose C), and tap tests found the same frequencies at pose A.</figcaption></figure>
+  <p class="prose">From the measured link response, each setting gets a critical hand damping c<sub>crit</sub> = 1 / |mobility at −180°|.
+    A firm grip measured on the link is about 40–60 N·s/m.</p>
+  <figure class="narrow"><a href="figures/fig6_stability_tradeoff.png"><img src="figures/fig6_stability_tradeoff.png" loading="lazy" width="1133" height="736"
+    alt="Critical hand damping against hand force for each tested setting"></a></figure>
+  <p class="callout prose">The margin matches every real-robot outcome: M 2 has about 2× margin and was stable; M 1 + notch sits
+    inside the grip band and oscillated; M 0.5 is below it and buzzed. So I kept M 2 kg and made the arm lighter with the
+    force limit instead (5 → 3.5 N), which does not affect this margin.</p>
+</section>
+
+<section id="results">
+  <h2><span class="n">4</span>Results on the real robot</h2>
+  <figure><a href="figures/fig1_hand_guiding.png"><img src="figures/fig1_hand_guiding.png" loading="lazy" width="1269" height="938"
+    alt="Time series of hand force, deviation and speed during hand guiding"></a></figure>
+  <table>
+    <tr><th></th><th>First tuning</th><th>Final</th></tr>
+    <tr><td>Setting</td><td class="num">M 8 / D 253 / K 2000 / F 5 N</td><td class="num"><b>M 2 / D 126.5 / K 2000 / F 3.5 N</b></td></tr>
+    <tr><td>Hand force at 40–60 mm/s</td><td class="num">17.8 N</td><td class="num"><b>9.7 N</b></td></tr>
+    <tr><td>Return to within 1 mm after release</td><td class="num">0.9–1.6 s</td><td class="num">0.3–1.4 s</td></tr>
+    <tr><td>Return blocked by a palm</td><td>—</td><td class="num">4.9–6.3 N peak</td></tr>
+    <tr><td>Long firm grip, 15–25 Hz force</td><td>—</td><td class="num">0.06–0.15 N, not growing</td></tr>
+    <tr><td>Missed packets / protective stops</td><td class="num">0 / 0</td><td class="num">0 / 0</td></tr>
+  </table>
+</section>
+
+<section id="data">
+  <h2><span class="n">5</span>Building on it: recording and replaying demonstrations</h2>
+  <p class="sub prose">The controller is the base for collecting human demonstrations and replaying their forces on the robot.
+    These parts are newer; each is marked with how far it has been tested.</p>
+  <div class="cards">
+    <div class="card"><span class="tag real">Real robot, simulated contact</span>
+      <h3>Force replay</h3>
+      <p>Replays a recorded pose and wrench with force feed-forward in the admittance. Against a 5 kN/m virtual wall the force
+        error on a 10 N/s ramp was −0.19 N, against +4.22 N for the virtual-target method (exactly D·Ḟ/K). Stiff contact
+        needs k<sub>e</sub>/D ≤ 50 rad/s: at 50 kN/m, D 600 oscillated at 17 Hz and D 1000 was stable.</p></div>
+    <div class="card"><span class="tag real">Real robot</span>
+      <h3>Handle teaching recorder</h3>
+      <p>Moved the compliance centre to the grasp point, estimated from the F/T sensor: a twist now slides it 0.1–1.5 mm
+        instead of 22–69 mm. Traced 25–31 Hz bursts in fast wrist rotation to the control loop (pendant freedrive stayed quiet)
+        and removed them with a rotation-only low-pass (41 → 1 strong windows). Added an elbow guard after tracing a
+        protective stop to the elbow crossing a safety plane.</p></div>
+    <div class="card"><span class="tag real">Real robot</span>
+      <h3>Synchronised recording</h3>
+      <p>Robot state, wrench and two RealSense D405 cameras per demonstration, without disturbing the 2 ms loop. Cameras and
+        file export run in their own processes, after I traced loop stalls of up to 12 ms to the writer thread holding the
+        GIL. Camera-to-robot timing, checked from motion: −0.1 ms (SE 3.7 ms).</p></div>
+    <div class="card"><span class="tag">URSim only</span>
+      <h3>Collision guard</h3>
+      <p>Keeps the tool clear of the robot's links, the table and the safety planes, using convex pieces of the UR meshes and the
+        tool CAD. MuJoCo distance queries, with my own GJK fallback where MuJoCo returned false zeros, run in a separate
+        process (about 50 µs inside the loop). No false alarms on 15,747 logged poses.</p></div>
+  </div>
+</section>
+
+<section id="next">
+  <h2><span class="n">6</span>Limitations and next steps</h2>
+  <ul class="prose">
+    <li><b>Variable impedance.</b> A policy that changes K online injects energy (½ ΔK Δx²). That needs a passivity mechanism
+      such as an energy tank; the analysis here covers fixed gains only.</li>
+    <li><b>Gripper and external sensor.</b> Not mounted yet. The gripper mass shows up in the measured force, so the deadbands,
+      identification and margins have to be measured again with it.</li>
+    <li><b>Coverage.</b> Identification was done at two poses, and contact with real stiff surfaces is still to be tested.</li>
+    <li><b>Next:</b> a reference that interpolates policy targets, then a second arm.</li>
+  </ul>
+</section>
+
+</main>
+<footer>
+  Every figure and video on this page is generated from the robot logs by my own scripts
+  (matplotlib for the figures; three.js and ffmpeg for the 3D replays).
+  UR5e meshes: Universal Robots, BSD-3-Clause.
+</footer>
+</body>
+</html>
