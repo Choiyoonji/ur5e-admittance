@@ -17,7 +17,7 @@
     color-scheme: light;
     --surface: #fcfcfb; --card: #ffffff; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
     --grid: #e1e0d9; --axis: #c3c2b7; --accent: #2a78d6; --good: #0ca30c;
-    --text: 680px; --wide: 1040px;
+    --wide: 1040px; --text: var(--wide);
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
@@ -46,7 +46,7 @@
   .byline a { color: var(--ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--axis);
     text-underline-offset: 4px; }
   .byline a:hover { color: var(--accent); text-decoration-color: currentColor; }
-  .lede { font-size: 19px; color: var(--ink2); max-width: 760px; margin: 0 0 32px; }
+  .lede { font-size: 19px; color: var(--ink2); max-width: var(--text); margin: 0 0 32px; }
   h2 { font-size: 28px; letter-spacing: -.01em; margin: 0 0 6px; }
   h2 .n { color: var(--muted); font-weight: 500; margin-right: 10px; }
   h3 { font-size: 18px; margin: 28px 0 6px; }
