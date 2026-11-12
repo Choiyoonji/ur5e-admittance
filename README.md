@@ -8,6 +8,8 @@ identification and stability analysis.
 
 By [Yoon-Ji Choi](https://choiyoonji.github.io/), Interactive Robotics Lab, Dongguk University.
 
-This repository holds only the web page (HTML, figures and videos). The robot footage is a 3D
-replay of logged real-robot runs (measured joint angles, hand force and controller state).
+This repository holds only the web page (HTML, figures, videos and the in-page push simulation in
+`sim/`). The robot footage is a 3D replay of logged real-robot runs (measured joint angles, hand
+force and controller state). The simulation runs the controller's 500 Hz cycle against a robot
+model fitted to the open-loop identification data.
 UR5e meshes in the videos: Universal Robots, BSD-3-Clause.

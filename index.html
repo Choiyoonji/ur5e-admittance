@@ -93,6 +93,48 @@
   .tag.real::before { background: var(--good); }
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
   .callout { border-left: 3px solid var(--accent); padding: 4px 0 4px 16px; color: var(--ink2); margin: 20px 0; }
+  .sim { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 20px; margin: 22px 0 10px;
+    background: var(--card); border: 1px solid var(--grid); border-radius: 12px; padding: 16px; }
+  .sim-stage { position: relative; min-width: 0; }
+  .sim-stage canvas { display: block; width: 100%; touch-action: none; cursor: grab; border-radius: 8px;
+    background: #fbfbfa; outline: none; }
+  .sim-stage canvas.grabbing { cursor: grabbing; }
+  .sim-stage canvas:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+  .sim-chip { position: absolute; left: 10px; top: 10px; right: 10px; width: fit-content; max-width: calc(100% - 20px);
+    font-size: 13.5px; line-height: 1.35; color: var(--ink2); background: rgba(255, 255, 255, .92);
+    border: 1px solid var(--grid); border-radius: 8px; padding: 5px 10px; pointer-events: none; }
+  .sim-chip.bad { color: var(--ink); border-color: #d03b3b; box-shadow: inset 3px 0 0 #d03b3b; }
+  .sim-chip.bad::before { content: "⚠ "; color: #d03b3b; }
+  .sim-hint { position: absolute; transform: translate(-50%, 0); pointer-events: none; white-space: nowrap;
+    font-size: 14px; color: var(--ink); background: rgba(255, 255, 255, .94); border: 1px solid var(--axis);
+    border-radius: 999px; padding: 6px 14px; box-shadow: 0 2px 10px rgba(0, 0, 0, .06); }
+  .sim-key { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12.5px; color: var(--ink2); margin-top: 8px; }
+  .sim-key i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+  .sim-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .sim-label { font-size: 12.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+  .sim-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .sim-settings button { font: inherit; text-align: left; cursor: pointer; background: var(--surface); color: var(--ink);
+    border: 1px solid var(--grid); border-radius: 8px; padding: 7px 10px; line-height: 1.3; }
+  .sim-settings button b { display: block; font-size: 14.5px; }
+  .sim-settings button span { display: block; font-size: 12.5px; color: var(--muted); }
+  .sim-settings button:hover { border-color: var(--axis); }
+  .sim-settings button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: #fff; }
+  .sim-params { font-size: 12.5px; color: var(--muted); margin: 6px 0 0; font-variant-numeric: tabular-nums; }
+  .sim-grip { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+  .sim-grip input { flex: 1; accent-color: var(--accent); }
+  .sim-gripval { font-size: 13px; color: var(--ink2); margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .sim-read { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .sim-read div { border: 1px solid var(--grid); border-radius: 8px; padding: 6px 10px; background: var(--surface); }
+  .sim-read b { display: block; font-size: 21px; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .sim-read span { font-size: 12.5px; color: var(--muted); }
+  .sim-side canvas[data-chart] { width: 100%; height: 220px; display: block; }
+  .sim-reset { align-self: flex-start; font: inherit; font-size: 13.5px; cursor: pointer; background: none; color: var(--ink2);
+    border: 1px solid var(--grid); border-radius: 999px; padding: 3px 12px; }
+  .sim-reset:hover { border-color: var(--axis); color: var(--ink); }
+  .try { counter-reset: t; list-style: none; padding: 0; }
+  .try li { position: relative; padding-left: 30px; }
+  .try li::before { counter-increment: t; content: counter(t); position: absolute; left: 0; top: 2px; width: 20px; height: 20px;
+    border-radius: 50%; background: var(--grid); color: var(--ink2); font-size: 12.5px; text-align: center; line-height: 20px; }
   footer { max-width: var(--wide); margin: 80px auto 0; padding: 22px 24px 40px; border-top: 1px solid var(--grid);
     color: var(--muted); font-size: 14px; }
   @media (max-width: 760px) {
@@ -105,13 +147,15 @@
     .flow .br { display: none; }
     .flow .arr { transform: rotate(90deg); padding: 2px 0; align-self: flex-start; margin-left: 20px; }
     .spec td:first-child { width: 96px; }
+    .sim { grid-template-columns: 1fr; padding: 10px; }
+    .sim-chip { position: static; width: auto; max-width: none; margin-top: 8px; }
   }
 </style>
 </head>
 <body>
 <nav><div class="in">
   <a href="#top">Overview</a><a href="#system">System</a><a href="#sensor">Sensor</a>
-  <a href="#controller">Controller</a><a href="#stability">Stability</a><a href="#results">Results</a>
+  <a href="#controller">Controller</a><a href="#stability">Stability</a><a href="#try">Try it</a><a href="#results">Results</a>
   <a href="#data">Demonstrations</a><a href="#next">Limits</a>
 </div></nav>
 <main id="top">
@@ -133,7 +177,7 @@
     </video>
   </div>
   <p class="cap">Highlight, 95 s. All robot footage is a 3D replay of logged real-robot runs: measured joint
-    angles, hand force and controller state, at 1× speed.</p>
+    angles, hand force and controller state, at 1× speed. Or <a href="#try">push it yourself</a> in the browser.</p>
 
   <div class="stats">
     <div class="stat"><div class="v">17.8 → 9.7 N</div>
@@ -271,8 +315,70 @@
     force limit instead (5 → 3.5 N), which does not affect this margin.</p>
 </section>
 
+<section id="try">
+  <h2><span class="n">4</span>Try it: push the robot</h2>
+  <p class="sub prose">The same controller, running at 500 Hz in your browser against a model of this robot fitted to the
+    identification above. Drag the tool to push it, then let go.</p>
+  <div class="sim" data-pushsim>
+    <div class="sim-stage" data-stage>
+      <canvas data-robot tabindex="0" role="application"
+        aria-label="Side view of the robot. Drag to push the tool; with the picture focused, arrow keys push with 12 N."></canvas>
+      <div class="sim-chip" data-chip aria-live="polite">Drag the tool (or anywhere on the picture) to push it</div>
+      <div class="sim-hint" data-hint>Drag to push the tool</div>
+      <div class="sim-key"><span><i style="background:#eb6834"></i>your hand force</span>
+        <span><i style="background:#2a78d6"></i>reference and virtual spring</span></div>
+    </div>
+    <div class="sim-side">
+      <div>
+        <p class="sim-label">Controller setting</p>
+        <div class="sim-settings">
+          <button type="button" data-setting="m8" aria-pressed="false"><b>M 8 kg</b><span>first tuning</span></button>
+          <button type="button" data-setting="m2" aria-pressed="true"><b>M 2 kg</b><span>final, used on the robot</span></button>
+          <button type="button" data-setting="m1n" aria-pressed="false"><b>M 1 kg + notch</b><span>grew 19.5 Hz on the robot</span></button>
+          <button type="button" data-setting="m05" aria-pressed="false"><b>M 0.5 kg</b><span>buzzed on the robot</span></button>
+        </div>
+        <p class="sim-params" data-params></p>
+      </div>
+      <div>
+        <p class="sim-label"><label for="sim-grip">Your grip</label></p>
+        <div class="sim-grip">light <input id="sim-grip" type="range" min="0" max="100" value="60" data-grip> firm</div>
+        <div class="sim-gripval" data-out="grip"></div>
+      </div>
+      <div class="sim-read">
+        <div><b data-out="force">0.0</b><span>force, N</span></div>
+        <div><b data-out="speed">0</b><span>speed, mm/s</span></div>
+        <div><b data-out="dev">0</b><span>offset, mm</span></div>
+      </div>
+      <canvas data-chart aria-hidden="true"></canvas>
+      <button type="button" class="sim-reset" data-reset>Reset</button>
+    </div>
+  </div>
+  <noscript><p class="cap">The simulation needs JavaScript.</p></noscript>
+  <div class="two" style="margin-top:18px">
+    <div>
+      <h3 style="margin-top:0">What to try</h3>
+      <ol class="try">
+        <li>Push at a steady speed with <b>M 8</b>, then with <b>M 2</b>. At 50 mm/s the hand force drops from about
+          18 N to 11 N (on the robot: 17.8 → 9.7 N).</li>
+        <li>Let go. The capped spring pulls back at F/D, and after 0.3 s untouched the arm returns at 100 mm/s.</li>
+        <li>Pick <b>M 0.5</b>, or <b>M 1 + notch</b> with a firm grip, and hold still. The force trace turns into a
+          thick band: the grip and the link mode close an unstable loop. <b>M 2</b> stays quiet even with the firmest grip.</li>
+      </ol>
+    </div>
+    <div>
+      <h3 style="margin-top:0">What is simulated</h3>
+      <p class="cap" style="margin-top:0">Not a recording. Each 2 ms cycle runs the robot code's steps in two axes (reach and height):
+        15 Hz filter, deadband, exact zero-order-hold admittance, capped spring with free return, speed and acceleration
+        limits, workspace box. The robot is the measured link response at pose A, fitted with one mode per axis (18.9 Hz
+        vertical, 39.7 Hz along the reach) behind an 8 ms delay; it reproduces the measured c<sub>crit</sub> of all four
+        settings within 15 %. Your hand is a spring and damper around the cursor (0.8–2.5 kN/m, 5–60 N·s/m). In this model
+        the vertical mode is the weakest, so unstable settings oscillate at about 15 Hz; on the robot, M 0.5 buzzed at 36 Hz.</p>
+    </div>
+  </div>
+</section>
+
 <section id="results">
-  <h2><span class="n">4</span>Results on the real robot</h2>
+  <h2><span class="n">5</span>Results on the real robot</h2>
   <figure><a href="figures/fig1_hand_guiding.png"><img src="figures/fig1_hand_guiding.png" loading="lazy" width="1269" height="938"
     alt="Time series of hand force, deviation and speed during hand guiding"></a></figure>
   <table>
@@ -287,7 +393,7 @@
 </section>
 
 <section id="data">
-  <h2><span class="n">5</span>Building on it: recording and replaying demonstrations</h2>
+  <h2><span class="n">6</span>Building on it: recording and replaying demonstrations</h2>
   <p class="sub prose">The controller is the base for collecting human demonstrations and replaying their forces on the robot.
     These parts are newer; each is marked with how far it has been tested.</p>
   <div class="cards">
@@ -316,7 +422,7 @@
 </section>
 
 <section id="next">
-  <h2><span class="n">6</span>Limitations and next steps</h2>
+  <h2><span class="n">7</span>Limitations and next steps</h2>
   <ul class="prose">
     <li><b>Variable impedance.</b> A policy that changes K online injects energy (½ ΔK Δx²). That needs a passivity mechanism
       such as an energy tank; the analysis here covers fixed gains only.</li>
@@ -331,8 +437,10 @@
 <footer>
   <a href="https://choiyoonji.github.io/">Yoon-Ji Choi</a> · <a href="https://github.com/Choiyoonji">GitHub</a><br>
   Every figure and video on this page is generated from the robot logs by my own scripts
-  (matplotlib for the figures; three.js and ffmpeg for the 3D replays).
+  (matplotlib for the figures; three.js and ffmpeg for the 3D replays). The simulation is plain JavaScript
+  on a model fitted to the identification data.
   UR5e meshes: Universal Robots, BSD-3-Clause.
 </footer>
+<script type="module" src="sim/widget.js"></script>
 </body>
 </html>
