@@ -146,6 +146,7 @@
     border-radius: 50%; background: var(--grid); color: var(--ink2); font-size: 12.5px; text-align: center; line-height: 20px; }
   footer { max-width: var(--wide); margin: 80px auto 0; padding: 22px 24px 40px; border-top: 1px solid var(--grid);
     color: var(--muted); font-size: 14px; }
+  footer .ack { color: var(--ink2); margin: 8px 0 12px; }
   @media (max-width: 760px) {
     body { font-size: 16px; }
     header { padding-top: 36px; }
@@ -489,7 +490,9 @@
 
 </main>
 <footer>
-  <a href="https://choiyoonji.github.io/">Yoon-Ji Choi</a> · <a href="https://github.com/Choiyoonji">GitHub</a><br>
+  <a href="https://choiyoonji.github.io/">Yoon-Ji Choi</a> · <a href="https://github.com/Choiyoonji">GitHub</a>
+  <p class="ack">Acknowledgements: thanks to Dae-Kwan Ko (Interactive Robotics Lab, Dongguk University) for help and
+    advice throughout this project.</p>
   Every figure and replay video on this page is generated from the robot logs by my own scripts
   (matplotlib for the figures; three.js and ffmpeg for the 3D replays). The data-collection clip is a screen recording
   of my collection GUI, and the camera frames are as recorded. The simulation is my own JavaScript
