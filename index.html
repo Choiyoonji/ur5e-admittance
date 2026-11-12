@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hand-guiding admittance control for a UR5e</title>
+<meta name="author" content="Yoon-Ji Choi">
 <meta name="description" content="A 500 Hz admittance controller on a UR5e's built-in wrist force/torque sensor, designed, tuned and analysed on the real robot.">
 <meta property="og:title" content="Hand-guiding admittance control for a UR5e">
 <meta property="og:description" content="500 Hz admittance control on the built-in wrist F/T sensor: sensor characterisation, controller design, open-loop identification and stability analysis on the real robot.">
@@ -41,6 +42,10 @@
   header { padding: 64px 0 8px; }
   .kicker { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
   h1 { font-size: clamp(32px, 5vw, 50px); line-height: 1.1; letter-spacing: -.02em; margin: 0 0 20px; max-width: 820px; }
+  .byline { margin: -6px 0 22px; font-size: 16px; color: var(--ink2); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .byline a { color: var(--ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--axis);
+    text-underline-offset: 4px; }
+  .byline a:hover { color: var(--accent); text-decoration-color: currentColor; }
   .lede { font-size: 19px; color: var(--ink2); max-width: 760px; margin: 0 0 32px; }
   h2 { font-size: 28px; letter-spacing: -.01em; margin: 0 0 6px; }
   h2 .n { color: var(--muted); font-weight: 500; margin-right: 10px; }
@@ -114,6 +119,8 @@
 <header>
   <p class="kicker">Robot control · Real-robot experiments</p>
   <h1>Hand-guiding admittance control for a UR5e</h1>
+  <p class="byline"><a href="https://choiyoonji.github.io/">Yoon-Ji Choi</a>
+    <span>Interactive Robotics Lab, Dongguk University</span></p>
   <p class="lede">A 500 Hz controller that lets a person push a UR5e around by its tool, using only the
     robot's built-in wrist force/torque sensor. I measured the sensor before designing the controller,
     tuned it on the real robot, and when lighter settings became unstable, designed an open-loop
@@ -322,6 +329,7 @@
 
 </main>
 <footer>
+  <a href="https://choiyoonji.github.io/">Yoon-Ji Choi</a> · <a href="https://github.com/Choiyoonji">GitHub</a><br>
   Every figure and video on this page is generated from the robot logs by my own scripts
   (matplotlib for the figures; three.js and ffmpeg for the 3D replays).
   UR5e meshes: Universal Robots, BSD-3-Clause.
