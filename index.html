@@ -96,10 +96,18 @@
   .sim { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 20px; margin: 22px 0 10px;
     background: var(--card); border: 1px solid var(--grid); border-radius: 12px; padding: 16px; }
   .sim-stage { position: relative; min-width: 0; }
-  .sim-stage canvas { display: block; width: 100%; touch-action: none; cursor: grab; border-radius: 8px;
+  .sim-stage > canvas { display: block; width: 100%; touch-action: none; cursor: grab; border-radius: 8px;
     background: #fbfbfa; outline: none; }
-  .sim-stage canvas.grabbing { cursor: grabbing; }
-  .sim-stage canvas:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+  .sim-stage > canvas.grabbing { cursor: grabbing; }
+  .sim-stage > canvas:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+  .sim-loading { aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; border-radius: 8px;
+    background: #f4f4f1; color: var(--muted); font-size: 14px; }
+  .sim-stage [hidden] { display: none !important; }
+  .sim-under { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+  .sim-viewbar { display: flex; gap: 4px; }
+  .sim-viewbar button { font: inherit; font-size: 12.5px; cursor: pointer; background: var(--surface); color: var(--ink2);
+    border: 1px solid var(--grid); border-radius: 999px; padding: 2px 10px; }
+  .sim-viewbar button:hover { border-color: var(--axis); color: var(--ink); }
   .sim-chip { position: absolute; left: 10px; top: 10px; right: 10px; width: fit-content; max-width: calc(100% - 20px);
     font-size: 13.5px; line-height: 1.35; color: var(--ink2); background: rgba(255, 255, 255, .92);
     border: 1px solid var(--grid); border-radius: 8px; padding: 5px 10px; pointer-events: none; }
@@ -108,7 +116,7 @@
   .sim-hint { position: absolute; transform: translate(-50%, 0); pointer-events: none; white-space: nowrap;
     font-size: 14px; color: var(--ink); background: rgba(255, 255, 255, .94); border: 1px solid var(--axis);
     border-radius: 999px; padding: 6px 14px; box-shadow: 0 2px 10px rgba(0, 0, 0, .06); }
-  .sim-key { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12.5px; color: var(--ink2); margin-top: 8px; }
+  .sim-key { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12.5px; color: var(--ink2); }
   .sim-key i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
   .sim-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
   .sim-label { font-size: 12.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
@@ -149,6 +157,7 @@
     .spec td:first-child { width: 96px; }
     .sim { grid-template-columns: 1fr; padding: 10px; }
     .sim-chip { position: static; width: auto; max-width: none; margin-top: 8px; }
+    .sim-loading { aspect-ratio: 1 / 0.95; }
   }
 </style>
 </head>
@@ -318,15 +327,17 @@
 <section id="try">
   <h2><span class="n">4</span>Try it: push the robot</h2>
   <p class="sub prose">The same controller, running at 500 Hz in your browser against a model of this robot fitted to the
-    identification above. Drag the tool to push it, then let go.</p>
+    identification above. Grab the robot and push it in any direction, then let go. Drag the background to look around.</p>
   <div class="sim" data-pushsim>
     <div class="sim-stage" data-stage>
-      <canvas data-robot tabindex="0" role="application"
-        aria-label="Side view of the robot. Drag to push the tool; with the picture focused, arrow keys push with 12 N."></canvas>
-      <div class="sim-chip" data-chip aria-live="polite">Drag the tool (or anywhere on the picture) to push it</div>
-      <div class="sim-hint" data-hint>Drag to push the tool</div>
-      <div class="sim-key"><span><i style="background:#eb6834"></i>your hand force</span>
-        <span><i style="background:#2a78d6"></i>reference and virtual spring</span></div>
+      <div class="sim-loading" data-loading>Loading the 3D robot…</div>
+      <div class="sim-chip" data-chip aria-live="polite">Drag the robot to push its tool. Drag the background to turn the view.</div>
+      <div class="sim-hint" data-hint hidden>Drag the robot to push</div>
+      <div class="sim-under">
+        <div class="sim-key"><span><i style="background:#eb6834"></i>your hand force</span>
+          <span><i style="background:#2a78d6"></i>reference and virtual spring</span></div>
+        <div class="sim-viewbar" data-views></div>
+      </div>
     </div>
     <div class="sim-side">
       <div>
@@ -359,7 +370,8 @@
       <h3 style="margin-top:0">What to try</h3>
       <ol class="try">
         <li>Push at a steady speed with <b>M 8</b>, then with <b>M 2</b>. At 50 mm/s the hand force drops from about
-          18 N to 11 N (on the robot: 17.8 → 9.7 N).</li>
+          18 N to 11 N (on the robot: 17.8 → 9.7 N). You push in the plane of the screen: turn the view (or use
+          <i>Side</i>, <i>Front</i>, <i>Top</i>) to push in another direction.</li>
         <li>Let go. The capped spring pulls back at F/D, and after 0.3 s untouched the arm returns at 100 mm/s.</li>
         <li>Pick <b>M 0.5</b>, or <b>M 1 + notch</b> with a firm grip, and hold still. The force trace turns into a
           thick band: the grip and the link mode close an unstable loop. <b>M 2</b> stays quiet even with the firmest grip.</li>
@@ -367,12 +379,14 @@
     </div>
     <div>
       <h3 style="margin-top:0">What is simulated</h3>
-      <p class="cap" style="margin-top:0">Not a recording. Each 2 ms cycle runs the robot code's steps in two axes (reach and height):
-        15 Hz filter, deadband, exact zero-order-hold admittance, capped spring with free return, speed and acceleration
-        limits, workspace box. The robot is the measured link response at pose A, fitted with one mode per axis (18.9 Hz
-        vertical, 39.7 Hz along the reach) behind an 8 ms delay; it reproduces the measured c<sub>crit</sub> of all four
-        settings within 15 %. Your hand is a spring and damper around the cursor (0.8–2.5 kN/m, 5–60 N·s/m). In this model
-        the vertical mode is the weakest, so unstable settings oscillate at about 15 Hz; on the robot, M 0.5 buzzed at 36 Hz.</p>
+      <p class="cap" style="margin-top:0">Not a recording. Each 2 ms cycle runs the robot code's steps for the tool position
+        in x, y and z (orientation held): 15 Hz filter, deadband, exact zero-order-hold admittance, capped spring with free
+        return, speed and acceleration limits, workspace box. The robot is the measured link response at pose A, fitted
+        per axis with one mode (z 18.9 Hz, y 27.1 Hz, x 39.7 Hz) behind an 8 ms delay; it reproduces the measured
+        c<sub>crit</sub> of all four settings within 25 % (z, the weakest axis: within 15 %). The arm is drawn from the
+        official UR5e meshes, posed by inverse kinematics. Your hand is a spring and damper around the cursor
+        (0.8–2.5 kN/m, 5–60 N·s/m). In this model the vertical mode is the weakest, so unstable settings oscillate at about
+        15 Hz; on the robot, M 0.5 buzzed at 36 Hz.</p>
     </div>
   </div>
 </section>
@@ -437,10 +451,13 @@
 <footer>
   <a href="https://choiyoonji.github.io/">Yoon-Ji Choi</a> · <a href="https://github.com/Choiyoonji">GitHub</a><br>
   Every figure and video on this page is generated from the robot logs by my own scripts
-  (matplotlib for the figures; three.js and ffmpeg for the 3D replays). The simulation is plain JavaScript
-  on a model fitted to the identification data.
+  (matplotlib for the figures; three.js and ffmpeg for the 3D replays). The simulation is my own JavaScript
+  (three.js for the view) on a model fitted to the identification data.
   UR5e meshes: Universal Robots, BSD-3-Clause.
 </footer>
+<script type="importmap">
+{"imports": {"three": "./sim/vendor/three/three.module.min.js", "three/addons/": "./sim/vendor/three/addons/"}}
+</script>
 <script type="module" src="sim/widget.js"></script>
 </body>
 </html>
