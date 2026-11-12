@@ -187,8 +187,7 @@
       <source src="media/highlight.mp4" type="video/mp4">
     </video>
   </div>
-  <p class="cap">Highlight, 95 s. All robot footage is a 3D replay of logged real-robot runs: measured joint
-    angles, hand force and controller state, at 1× speed. Or <a href="#try">push it yourself</a> in the browser.</p>
+  <p class="cap">Highlight, 95 s: 3D replays of logged real-robot runs at 1× speed. Or <a href="#try">push it yourself</a> in the browser.</p>
 
   <div class="stats">
     <div class="stat"><div class="v">17.8 → 9.7 N</div>
@@ -196,7 +195,7 @@
     <div class="stat"><div class="v">19 Hz</div>
       <div class="l">Link mode found by open-loop identification. A margin built on it explains every stability result on the robot.</div></div>
     <div class="stat"><div class="v">500 Hz</div>
-      <div class="l">Control loop in Python: 0 missed packets, at most 1.9 ms of the 2 ms budget.</div></div>
+      <div class="l">Control loop in Python on a PC, inside the robot's 2 ms cycle.</div></div>
   </div>
   <ul class="skills">
     <li>Admittance control</li><li>Discrete-time design</li><li>System identification</li>
@@ -224,8 +223,7 @@
   <table class="spec prose">
     <tr><td>Robot</td><td>UR5e, PolyScope 5.25, built-in wrist force/torque sensor</td></tr>
     <tr><td>Software</td><td>Python 3 + numpy over <code>ur_rtde</code>; one control step per RTDE packet</td></tr>
-    <tr><td>Testing</td><td>Offline closed-loop simulation tests, then URSim, then the real robot. Each new feature, switched off, was checked against the previous commit: identical commands over 41,000 cycles.</td></tr>
-    <tr><td>Tools</td><td>Sensor loggers and drift/hysteresis analysis; a browser GUI with a live F/T plot and 3D robot view; a data-collection GUI with live cameras and an episode table; open-loop identification and tap tests; the figure and video scripts for this page.</td></tr>
+    <tr><td>Testing</td><td>Offline closed-loop simulation tests, then URSim, then the real robot.</td></tr>
   </table>
 </section>
 
@@ -237,14 +235,10 @@
   <ul class="prose">
     <li><b>Thermal drift.</b> At rest, Fy rose 6.2 N in 30 minutes. Divided by the damping, a bias is a creep
       velocity, so it sets how often the controller must re-zero.</li>
-    <li><b>Noise is not isotropic.</b> Fz noise is 2.5–4× Fx at every frequency, so the deadband is an ellipsoid
-      per sensor axis (0.75 / 0.75 / 1.75 N), shrunk continuously so there is no jump at its edge.</li>
-    <li><b>Hysteresis.</b> After a twist, Fz stays 1–3.4 N off for minutes. Pressing with 18 N does not do this.</li>
-    <li><b>Hands-off hold and re-zero.</b> After a long session the arm crept 78 mm in 150 s. The controller now
-      detects "hands off" from the force variance, holds the arm and absorbs the leftover bias. Replaying the
-      same log, the creep falls to about 1 mm.</li>
-    <li><b>A library bug.</b> On PolyScope 5.25, <code>ur_rtde</code> 1.6.3 returns other data for three fields.
-      I confirmed it by parsing the RTDE stream directly; 1.6.5 reads them correctly.</li>
+    <li><b>Noise is not isotropic.</b> Fz noise is 2.5–4× Fx, so the deadband is an ellipsoid per sensor axis.</li>
+    <li><b>Hysteresis.</b> After a twist, Fz stays up to 3.4 N off for minutes.</li>
+    <li><b>Hands-off hold and re-zero.</b> The controller detects "hands off" from the force variance, holds the arm
+      and absorbs the leftover bias. On the same log, the creep after a long session falls from 78 mm to about 1 mm.</li>
   </ul>
 </section>
 
@@ -259,30 +253,24 @@
   <p class="cap">Hand guiding with the final setting (replay of a real-robot log, 30 s).</p>
   <ul class="prose">
     <li><b>Deviation coordinates.</b> The admittance is solved for the deviation from a reference x<sub>ref</sub>(t),
-      so damping acts only on the deviation and the arm follows a moving reference without lag: 0.04 mm error at
-      20 mm/s, against 2.5–5.2 mm when the spring acts on the absolute pose.</li>
+      so damping acts only on the deviation and the arm follows a moving reference without lag.</li>
     <li><b>Exact discretisation.</b> The loop integrates the admittance with a zero-order hold (matrix exponential)
-      and sends the exact average velocity over each cycle. Semi-implicit Euler moved the damping pole by 7 % at
-      M 2 kg and 39 % at 0.25 kg.</li>
+      and sends the exact average velocity over each cycle, so light settings keep the damping they were designed with.</li>
     <li><b>Force-limited spring.</b> sat(K Δx): linear near the reference, constant beyond. When something blocks the
-      way back, the arm presses with about 5–6 N instead of K·x (78 N in a URSim wall test).</li>
+      way back, the arm presses with the capped force instead of K·x.</li>
     <li><b>Free return.</b> When nothing has touched the tool for 0.3 s, the arm returns at 100 mm/s instead of
-      28 mm/s; a touch restores the limit within 3 cycles.</li>
-    <li><b>IK on the PC.</b> Damped least squares, damped only near singularities. In URSim the arm crossed the
-      wrist singularity without a protective stop.</li>
-    <li><b>A "66 ms lag"</b> turned out to be the pendant speed slider at 50 %. The controller now reads the speed
-      scaling every cycle.</li>
+      creeping back at F/D.</li>
   </ul>
   <div class="two">
     <figure style="margin-top:8px"><a href="figures/fig3_force_limited_spring.png"><img src="figures/fig3_force_limited_spring.png"
       loading="lazy" width="1051" height="686" alt="Spring force against deviation, capped at the force limit"></a>
-      <figcaption>On the robot the spring force stayed at 4.96–5.12 N from 2.5 to 122 mm.</figcaption></figure>
+      <figcaption>On the robot the spring force stayed at the 5 N cap over the whole push.</figcaption></figure>
     <div>
       <h3 style="margin-top:8px">Safety layers</h3>
       <ul>
-        <li>Height floor with a braking-distance speed limit: 0.09–0.14 mm past it at 12–70 mm/s.</li>
+        <li>Height floor with a braking-distance speed limit.</li>
         <li>Workspace box and a 30° rotation limit for the cable (<a href="media/rotation_limit.mp4">replay</a>).</li>
-        <li>Acceleration limit fed back into the controller state. Without the feedback the joint limit chattered at 35 Hz.</li>
+        <li>Acceleration limit fed back into the controller state.</li>
         <li>Watchdog and stops on packet loss, safety mode and implausible wrench values.</li>
       </ul>
     </div>
@@ -309,14 +297,13 @@
   <p class="cap">The same long grip, before (M 1 + notch) and after (M 2). The 15–25 Hz force grows about 4× before and stays flat after.</p>
 
   <h3>Open-loop identification</h3>
-  <p class="prose">A rigid "2 cycles + 8 ms" robot model predicted neither failure. Estimating the robot's response from
-    hand-guiding logs was biased, because the hand closes the loop (coherence 0.33–0.5 at 17–28 Hz). So I designed an
-    open-loop test: hands off, a 34-line multisine from 1 to 100 Hz added to <code>speedJ</code>, the arm within 0.51 mm of
-    its start, and the tool accelerometer measuring the link itself.</p>
+  <p class="prose">A rigid robot model predicted neither failure, and the robot's response estimated from hand-guiding
+    logs was biased, because the hand closes the loop. So I designed an open-loop test: hands off, a multisine from
+    1 to 100 Hz added to <code>speedJ</code>, and the tool accelerometer measuring the link itself.</p>
   <figure><a href="figures/fig5_link_frf.png"><img src="figures/fig5_link_frf.png" loading="lazy" width="1657" height="671"
     alt="Measured frequency response of link and encoder for three axes and two poses"></a>
     <figcaption>Above 15 Hz the link resonates where the encoder shows anti-resonances: a two-mass system with a flexible joint.
-      The modes move when the arm reaches out (pose C), and tap tests found the same frequencies at pose A.</figcaption></figure>
+      The modes move with the pose.</figcaption></figure>
   <p class="prose">From the measured link response, each setting gets a critical hand damping c<sub>crit</sub> = 1 / |mobility at −180°|.
     A firm grip measured on the link is about 40–60 N·s/m.</p>
   <figure class="narrow"><a href="figures/fig6_stability_tradeoff.png"><img src="figures/fig6_stability_tradeoff.png" loading="lazy" width="1133" height="736"
@@ -371,9 +358,9 @@
     <div>
       <h3 style="margin-top:0">What to try</h3>
       <ol class="try">
-        <li>Push at a steady speed with <b>M 8</b>, then with <b>M 2</b>. At 50 mm/s the hand force drops from about
-          18 N to 11 N (on the robot: 17.8 → 9.7 N). You push in the plane of the screen: turn the view (or use
-          <i>Side</i>, <i>Front</i>, <i>Top</i>) to push in another direction.</li>
+        <li>Push at a steady speed with <b>M 8</b>, then with <b>M 2</b>: the force you need drops as it did on the robot.
+          You push in the plane of the screen: turn the view (or use <i>Side</i>, <i>Front</i>, <i>Top</i>) to push in
+          another direction.</li>
         <li>Let go. The capped spring pulls back at F/D, and after 0.3 s untouched the arm returns at 100 mm/s.</li>
         <li>Pick <b>M 0.5</b>, or <b>M 1 + notch</b> with a firm grip, and hold still. The force trace turns into a
           thick band: the grip and the link mode close an unstable loop. <b>M 2</b> stays quiet even with the firmest grip.</li>
@@ -381,14 +368,10 @@
     </div>
     <div>
       <h3 style="margin-top:0">What is simulated</h3>
-      <p class="cap" style="margin-top:0">Not a recording. Each 2 ms cycle runs the robot code's steps for the tool position
-        in x, y and z (orientation held): 15 Hz filter, deadband, exact zero-order-hold admittance, capped spring with free
-        return, speed and acceleration limits, workspace box. The robot is the measured link response at pose A, fitted
-        per axis with one mode (z 18.9 Hz, y 27.1 Hz, x 39.7 Hz) behind an 8 ms delay; it reproduces the measured
-        c<sub>crit</sub> of all four settings within 25 % (z, the weakest axis: within 15 %). The arm is drawn from the
-        official UR5e meshes, posed by inverse kinematics. Your hand is a spring and damper around the cursor
-        (0.8–2.5 kN/m, 5–60 N·s/m). In this model the vertical mode is the weakest, so unstable settings oscillate at about
-        15 Hz; on the robot, M 0.5 buzzed at 36 Hz.</p>
+      <p class="cap" style="margin-top:0">Not a recording. Each 2 ms cycle runs the controller's steps for the tool position
+        (orientation held). The robot is the measured link response, fitted per axis with one mode behind a delay; it
+        reproduces the measured c<sub>crit</sub> of all four settings within 25 %. Your hand is a spring and damper around
+        the cursor. Unstable settings oscillate at about 15 Hz here; on the robot, M 0.5 buzzed at 36 Hz.</p>
     </div>
   </div>
 </section>
@@ -402,8 +385,6 @@
     <tr><td>Setting</td><td class="num">M 8 / D 253 / K 2000 / F 5 N</td><td class="num"><b>M 2 / D 126.5 / K 2000 / F 3.5 N</b></td></tr>
     <tr><td>Hand force at 40–60 mm/s</td><td class="num">17.8 N</td><td class="num"><b>9.7 N</b></td></tr>
     <tr><td>Return to within 1 mm after release</td><td class="num">0.9–1.6 s</td><td class="num">0.3–1.4 s</td></tr>
-    <tr><td>Return blocked by a palm</td><td>—</td><td class="num">4.9–6.3 N peak</td></tr>
-    <tr><td>Long firm grip, 15–25 Hz force</td><td>—</td><td class="num">0.06–0.15 N, not growing</td></tr>
     <tr><td>Missed packets / protective stops</td><td class="num">0 / 0</td><td class="num">0 / 0</td></tr>
   </table>
 </section>
@@ -411,67 +392,48 @@
 <section id="data">
   <h2><span class="n">6</span>Building on it: recording and replaying demonstrations</h2>
   <p class="sub prose">The controller is the base for collecting human demonstrations and replaying their forces on the robot.
-    These parts are newer; each is marked with how far it has been tested. Below them, the first collection session
-    puts the recorder to work on the real robot.</p>
+    These parts are newer; each is marked with how far it has been tested.</p>
   <div class="cards three">
     <div class="card"><span class="tag real">Real robot, simulated contact</span>
       <h3>Force replay</h3>
       <p>Replays a recorded pose and wrench with force feed-forward in the admittance. Against a 5 kN/m virtual wall the force
-        error on a 10 N/s ramp was −0.19 N, against +4.22 N for the virtual-target method (exactly D·Ḟ/K). Stiff contact
-        needs k<sub>e</sub>/D ≤ 50 rad/s: at 50 kN/m, D 600 oscillated at 17 Hz and D 1000 was stable.</p></div>
+        error on a 10 N/s ramp was −0.19 N, against +4.22 N for the virtual-target method. Stiff contact
+        needs k<sub>e</sub>/D ≤ 50 rad/s.</p></div>
     <div class="card"><span class="tag real">Real robot</span>
       <h3>Handle teaching recorder</h3>
-      <p>Moved the compliance centre to the grasp point, estimated from the F/T sensor: a twist now slides it 0.1–1.5 mm
-        instead of 22–69 mm. Traced 25–31 Hz bursts in fast wrist rotation to the control loop (pendant freedrive stayed quiet)
-        and removed them with a rotation-only low-pass (41 → 1 strong windows). Added an elbow guard after tracing a
-        protective stop to the elbow crossing a safety plane.</p></div>
+      <p>Moves the compliance centre to the grasp point, so twisting the handle no longer slides the tool (0.1–1.5 mm
+        instead of 22–69 mm). A rotation-only low-pass removes bursts in fast wrist rotation, and an elbow guard keeps
+        the elbow off the safety planes.</p></div>
     <div class="card"><span class="tag">URSim only</span>
       <h3>Collision guard</h3>
       <p>Keeps the tool clear of the robot's links, the table and the safety planes, using convex pieces of the UR meshes and the
-        tool CAD. MuJoCo distance queries, with my own GJK fallback where MuJoCo returned false zeros, run in a separate
-        process (about 50 µs inside the loop). No false alarms on 15,747 logged poses.</p></div>
+        tool CAD. The distance queries run in a separate process. No false alarms on the logged poses.</p></div>
   </div>
 
   <h3>First collection session on the real robot</h3>
-  <p class="prose">On 12 November I recorded a first small dataset with the whole pipeline. The task: guide the arm by its
-    handle and roll a ball across the table with the tool tip ("Move the red ball to the hole"). My collection GUI starts the
-    500 Hz teaching controller, shows both cameras and the loop's health live, and saves each episode to its own folder:
-    the robot log, colour and depth video from each camera, and the task and instruction. The robot and both RealSense
-    D405 cameras are recorded on one clock. The cameras and the file export run in their own processes, after I traced
-    loop stalls of up to 12 ms to a writer thread holding the GIL. Camera-to-robot timing, checked from motion, is
-    −0.1 ms (SE 3.7 ms).</p>
+  <p class="prose">On 12 November I recorded a first small dataset with the whole pipeline: guiding the arm by its handle
+    to roll a ball across the table with the tool tip. My collection GUI starts the teaching controller, shows both
+    cameras live and saves each episode to its own folder: the 500 Hz robot log and colour and depth video from two
+    RealSense D405 cameras, on one clock. The four episodes (129 s) kept every robot row; the cameras dropped 3 frames
+    in about 7,700.</p>
   <div class="video">
     <video controls playsinline preload="none" poster="media/posters/collection_gui.jpg">
       <source src="media/collection_gui.mp4" type="video/mp4">
     </video>
   </div>
-  <p class="cap">The collection GUI recording episode 4: a screen recording at 1× (42 s). Space starts and stops an episode,
-    and the next one can start right away. Robot IP and dataset path are blurred.</p>
+  <p class="cap">The collection GUI recording episode 4 (screen recording, 1×). Robot IP and dataset path are blurred.</p>
   <figure><a href="figures/fig8_collection.png"><img src="figures/fig8_collection.png" loading="lazy" width="1376" height="1261"
     alt="Scene and wrist camera frames at three moments of one episode, above the tool speed, rotation and wrist force over the same episode"></a>
     <figcaption>Episode 4 from the saved files. The force is what the built-in wrist sensor reads: the hand and the ball
       together, which partly cancel.</figcaption></figure>
-  <table>
-    <tr><th></th><th>First session, 12 Nov 2026</th></tr>
-    <tr><td>Episodes</td><td class="num">4, 26.6–36.3 s each (129 s)</td></tr>
-    <tr><td>Robot log</td><td class="num">64,473 rows at 500 Hz, 0 dropped</td></tr>
-    <tr><td>Cameras</td><td>2 × RealSense D405, colour + depth, 640 × 480 at 30 fps: no gaps except 3 single-frame
-      drops (wrist camera, episode 4)</td></tr>
-    <tr><td>Hand-guided speed</td><td class="num">39–44 mm/s mean, 103–112 mm/s peak</td></tr>
-    <tr><td>Tool at the 30° rotation limit</td><td class="num">62–86 % of each episode</td></tr>
-    <tr><td>Loop over the whole session</td><td>11.6 min with the GUI, both cameras and a screen recorder running:
-      compute 1.39 ms median, 1.96 ms at the 99.9th percentile; 13 missed packets</td></tr>
-  </table>
   <ul class="prose">
-    <li><b>The rotation limit shaped the demonstrations.</b> Pushing the ball tilts the tool, and the tilt built up over the
-      session: the episodes started 10°, 21°, 29° and 26° from the run's start pose. For most of each episode the tool sat
-      at the 30° cable limit. Next: re-centre the limit at each episode start.</li>
-    <li><b>Motion only, for now.</b> With only the built-in sensor, the hand on the handle and the ball under the tool load
-      the same sensor, so these episodes record the motion and the summed force, not the contact force. Each file marks
-      its contact force as invalid; separating them needs the external F/T sensor.</li>
-    <li><b>The recorder still costs the loop something.</b> The tuning runs had no missed packets; this session had 13:
-      3 at start-up, 5 as the first recording started, and 5 spread over the session. The burst at the first recording
-      is the next thing to trace.</li>
+    <li><b>The rotation limit shaped the demonstrations.</b> Pushing the ball tilts the tool, and the tilt built up over
+      the session: for 62–86 % of each episode the tool sat at the 30° cable limit. Next: re-centre the limit at each
+      episode start.</li>
+    <li><b>Motion only, for now.</b> The hand on the handle and the ball under the tool load the same built-in sensor, so
+      these episodes record the motion, not the contact force. Separating them needs the external F/T sensor.</li>
+    <li><b>The recorder still costs the loop something.</b> With the GUI, both cameras and a screen recorder running, the loop missed
+      13 packets in 11.6 min, where the tuning runs missed none. That is the next thing to trace.</li>
   </ul>
 </section>
 
@@ -481,8 +443,7 @@
     <li><b>Variable impedance.</b> A policy that changes K online injects energy (½ ΔK Δx²). That needs a passivity mechanism
       such as an energy tank; the analysis here covers fixed gains only.</li>
     <li><b>Gripper and external sensor.</b> Not mounted yet. The gripper mass shows up in the measured force, so the deadbands,
-      identification and margins have to be measured again with it. Until the external sensor is on, demonstrations record
-      motion only.</li>
+      identification and margins have to be measured again with it.</li>
     <li><b>Coverage.</b> Identification was done at two poses, and contact with real stiff surfaces is still to be tested.</li>
     <li><b>Next:</b> a reference that interpolates policy targets, then a second arm.</li>
   </ul>
@@ -493,10 +454,8 @@
   <a href="https://choiyoonji.github.io/">Yoon-Ji Choi</a> · <a href="https://github.com/Choiyoonji">GitHub</a>
   <p class="ack">Acknowledgements: thanks to Dae-Kwan Ko (Interactive Robotics Lab, Dongguk University) for help and
     advice throughout this project.</p>
-  Every figure and replay video on this page is generated from the robot logs by my own scripts
-  (matplotlib for the figures; three.js and ffmpeg for the 3D replays). The data-collection clip is a screen recording
-  of my collection GUI, and the camera frames are as recorded. The simulation is my own JavaScript
-  (three.js for the view) on a model fitted to the identification data.
+  Figures and 3D replays are generated from the robot logs by my own scripts; the collection clip is a screen recording.
+  The simulation is my own JavaScript on a model fitted to the identification data.
   UR5e meshes: Universal Robots, BSD-3-Clause.
 </footer>
 <script type="importmap">
